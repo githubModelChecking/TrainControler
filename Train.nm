@@ -1,1 +1,87 @@
 
+mdp
+const double n;
+const double speed;
+const double noseAtNext;
+
+const double acm;
+const double acmgrade;
+const double vcm;
+
+const double currtV;
+
+module train
+start: bool init true;
+acmEvent : bool init false; 
+vcmEvent : bool init false;
+wait : bool init false;
+Position : bool init false;
+lg1 : bool init false;
+lg2 : bool init false;
+lg3 : bool init false;
+lg4 : bool init false;
+lg5 : bool init false;
+lg6 : bool init false;
+lg7 : bool init false;
+M11 : bool init false;
+M12 : bool init false;
+M13 : bool init false;
+M14 : bool init false;
+M15 : bool init false;
+Next : bool init false;
+speedCalc : bool init false;
+Acc : bool init false;
+
+final : bool init false;
+x : [0..10] init 0;
+
+[start] start -> (start'=false) & (acmEvent'=true); 
+[acmEvent] acmEvent -> (wait'=true) & (acmEvent'=false);
+[wait] wait & x>=5 -> (vcmEvent'=true) & (wait'=false);
+[wait] wait & x<=5 -> (x'=x+1);
+ 
+[vcmEvent] vcmEvent -> (Position'=true) & (vcmEvent'=false)&(x'=0);
+
+[Position] Position &  x>=2-> 0.5:(lg1'=true)&(Position'=false)&(x'=0)+0.5:(lg2'=true)&(Position'=false)&(x'=0);
+[time] Position &  x<=5 -> (x'=x+1);
+[lg1]lg1 & currtV=0 & vcm=0  -> (lg1'=false)& (M11'=true);
+[lg2]lg2 -> (lg2'=false)& (speedCalc'=true)&(x'=0);
+[speedCalc] speedCalc &  x>=3-> 0.2:(lg1'=true)&(speedCalc'=false)+ 0.3:(lg3'=true)&(speedCalc'=false)+0.5:(lg4'=true)&(speedCalc'=false);
+[time] Position &  x<=6 -> (x'=x+1);
+[lg3]lg3 & speed<=0-> (lg3'=false)& (M12'=true);
+[lg4]lg4 -> (lg4'=false)& (Next'=true)&(x'=0);
+[Next]Next &  x>=4 -> (Next'=false)& (Acc'=true);
+[time]Next &  x<=6-> (x'=x+1);
+[Acc] Acc -> 0.2:(lg7'=true)&(Acc'=false)+ 0.3:(lg5'=true)&(Acc'=false)+0.5:(lg6'=true)&(Acc'=false);
+[lg5]lg5 & (currtV >(vcm-2)) & acm< 0 -> (lg5'=false)& (M13'=true);
+[lg6]lg6 -> (lg6'=false)& (M14'=true);
+[lg7]lg7 & (currtV >(vcm-2)) & acm>0 -> (lg7'=false)& (M15'=true);
+
+[M11]M11 -> (M11'=false)&(final'=true);
+[M12]M12 -> (M12'=false)&(final'=true);
+[M13]M13 -> (M13'=false)&(final'=true);
+[M14]M14 -> (M14'=false)&(final'=true);
+[M15]M15 -> (M15'=false)&(final'=true);
+endmodule
+
+module timer
+z : [0..1000] init 0;
+[time] z<=100 ->(z'=z+1);
+
+endmodule
+rewards "acceleration"
+    [lg1]lg1 : 0;
+    [lg6]lg6 : noseAtNext;
+    [lg5]lg5 : acmgrade;
+    [lg7]lg7 : acmgrade;
+endrewards
+
+rewards "velocity"
+    [lg1]lg1 : 0;
+    [lg3]lg3 & speed<=0: 0;
+    [lg4]lg4 : speed;
+endrewards
+
+rewards "nosePosition"
+    [lg2]lg2 : n;
+endrewards
